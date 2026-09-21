@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux and Shell Programming - Lab Programs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2F6FB;
+    --grid: #DCE5F2;
+    --ink: #12213F;
+    --muted: #5B6B8C;
+    --cobalt: #2A4BEB;
+    --marker: #FFE14D;
+    --danger: #C62828;
+    --code-bg: #0E1A35;
+    --code-bar: #17264A;
+    --code-text: #E4EBFA;
+    --sans: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+    line-height: 1.6;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+
+  /* ---------- Layout ---------- */
+  .shell { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 100vh; }
+  aside {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 28px 20px; background: rgba(242,246,251,.94);
+    border-right: 2px solid var(--ink);
+  }
+  aside h1 { font-size: 1.6rem; line-height: 1.1; margin: 0 0 4px; font-weight: 800; letter-spacing: -.02em; }
+  aside .sub { margin: 0 0 20px; color: var(--muted); font-size: .92rem; }
+  .search {
+    width: 100%; padding: 10px 12px; font: inherit; font-size: .95rem;
+    border: 2px solid var(--ink); border-radius: 6px; background: #fff; color: var(--ink);
+  }
+  #index { list-style: none; margin: 16px 0 0; padding: 0; }
+  #index a {
+    display: grid; grid-template-columns: 2.2rem 1fr; gap: 6px; align-items: baseline;
+    padding: 6px 8px; text-decoration: none; border-radius: 6px; font-size: .93rem; line-height: 1.35;
+  }
+  #index a .no { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
+  #index a:hover { background: #fff; }
+  #index a.active { background: var(--marker); font-weight: 600; }
+  #index a.active .no { color: var(--ink); }
+
+  main { padding: 40px clamp(16px, 4vw, 56px) 80px; max-width: 980px; }
+
+  .howto { margin: 0 0 56px; background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 18px 22px; box-shadow: 5px 5px 0 var(--ink); }
+  .howto h2 { margin: 0 0 8px; font-size: 1.15rem; font-weight: 800; }
+  .howto ol { margin: 0 0 10px; padding-left: 1.3rem; }
+  .howto li { margin-bottom: 4px; }
+  .howto p { margin: 0; color: var(--muted); font-size: .93rem; max-width: 72ch; }
+  .howto code, .explain code { font-family: var(--mono); font-size: .86em; background: #E6ECF8; padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+
+  /* ---------- Program ---------- */
+  .program { margin: 0 0 72px; }
+  .program header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+  .badge {
+    flex: none; min-width: 3.2rem; padding: 4px 10px; text-align: center;
+    font-family: var(--mono); font-weight: 500; font-size: .95rem;
+    background: var(--ink); color: #fff; border-radius: 6px;
+  }
+  .program h2 { margin: 0; font-size: clamp(1.3rem, 2.4vw, 1.75rem); line-height: 1.2; font-weight: 800; letter-spacing: -.015em; }
+  .aim { margin: 4px 0 0; color: var(--muted); }
+
+  .codebox { border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; background: var(--code-bg); box-shadow: 5px 5px 0 var(--ink); }
+  .codebox + .codebox { margin-top: 22px; }
+  .bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 8px 8px 14px; background: var(--code-bar); }
+  .lang { font-family: var(--mono); font-size: .8rem; color: #9DB0DA; overflow-wrap: anywhere; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .copy {
+    flex: none; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer;
+    padding: 6px 12px; border: 2px solid var(--marker); border-radius: 6px;
+    background: transparent; color: var(--marker); min-width: 5.5rem;
+    transition: background .15s, color .15s;
+  }
+  .copy.term { border-color: #7CF0A6; color: #7CF0A6; }
+  .copy:hover, .copy.done { background: var(--marker); color: var(--ink); }
+  .copy.term:hover, .copy.term.done { background: #7CF0A6; color: var(--ink); }
+  pre { margin: 0; padding: 16px 18px; overflow-x: auto; }
+  pre code { font-family: var(--mono); font-size: .88rem; line-height: 1.65; color: var(--code-text); white-space: pre; tab-size: 4; }
+
+  /* highlight.js tokens */
+  .hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-meta { color: #8FB0FF; }
+  .hljs-string, .hljs-regexp { color: #9BE3A5; }
+  .hljs-number { color: #FFC776; }
+  .hljs-comment, .hljs-quote { color: #7F8DAE; font-style: italic; }
+  .hljs-title, .hljs-function .hljs-title { color: #FFE14D; }
+  .hljs-built_in, .hljs-type, .hljs-params, .hljs-attr, .hljs-variable { color: #7FD9E8; }
+
+  .out-label, .exp-label { font-weight: 600; margin: 26px 0 8px; }
+  .output {
+    margin: 0; padding: 12px 16px; font-family: var(--mono); font-size: .85rem; line-height: 1.6;
+    background: #fff; border: 2px dashed var(--ink); border-radius: 8px; overflow-x: auto; white-space: pre;
+  }
+  .explain { background: #fff; border-left: 6px solid var(--cobalt); padding: 14px 18px; border-radius: 0 8px 8px 0; }
+  .explain.warn { border-left-color: var(--danger); background: #FFF5F5; }
+  .explain p { margin: 0 0 10px; max-width: 70ch; }
+  .explain p:last-child, .explain ul:last-child, .explain ol:last-child { margin-bottom: 0; }
+  .explain ul, .explain ol { margin: 0 0 10px; padding-left: 1.3rem; max-width: 70ch; }
+  .explain li { margin-bottom: 4px; }
+
+  .empty { display: none; padding: 24px; border: 2px dashed var(--ink); border-radius: 8px; background: #fff; }
+  .empty.show { display: block; }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 900px) {
+    .shell { display: block; }
+    aside { position: sticky; top: 0; z-index: 5; height: auto; padding: 12px 14px; border-right: 0; border-bottom: 2px solid var(--ink); }
+    aside h1 { font-size: 1.2rem; }
+    aside .sub { margin-bottom: 10px; font-size: .85rem; }
+    #index { display: flex; gap: 6px; overflow-x: auto; margin-top: 10px; padding-bottom: 4px; }
+    #index li { flex: none; }
+    #index a { grid-template-columns: auto; padding: 5px 12px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; }
+    #index a .t { display: none; }
+    #index a .no { color: var(--ink); font-size: .85rem; }
+    main { padding-top: 28px; }
+    .codebox, .howto { box-shadow: 3px 3px 0 var(--ink); }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .copy { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside>
+    <h1>Linux and Shell Programming</h1>
+    <p class="sub">Core Lab VI, 24BCT54P</p>
+    <input class="search" id="search" type="search" placeholder="Search programs" aria-label="Search programs">
+    <ul id="index"></ul>
+  </aside>
+
+  <main>
+    <section class="howto">
+      <h2>How to run any script in Linux</h2>
+      <ol>
+        <li>Click <strong>Copy for terminal</strong> on the script box.</li>
+        <li>Open the Linux terminal, paste it (<code>Ctrl+Shift+V</code>, or right-click in PuTTY) and press Enter.</li>
+        <li>The file is created and runs at once. Type your inputs when the script asks.</li>
+      </ol>
+      <p>To make the file by hand instead: <code>vi name.sh</code>, press <code>i</code>, paste, press <code>Esc</code>, type <code>:wq</code> and Enter. Then run <code>bash name.sh</code>. Use <code>bash</code> (not <code>sh</code>) because these scripts use bash features like arrays and <code>for ((...))</code>.</p>
+    </section>
+    <div id="programs"></div>
+    <div class="empty" id="empty">No program matches that search. Try a different word.</div>
+  </main>
+</div>
+
+<!--
+  ================================================================
+  TEMPLATE for a new program:
+
+  <article data-title="Title" data-aim="One line aim" data-lang="bash">
+    <script type="text/plain" data-role="code" data-file="name.sh"
+            data-run="bash name.sh 3"                          (optional: how to run, default "bash name.sh")
+            data-setup="mkdir -p lab && cd lab && touch f">     (optional: safe setup before the script)
+      ...script...
+    </script>
+    <script type="text/plain" data-role="output"> ... </script>
+    <script type="text/plain" data-role="explanation"> ... </script>
+    <script type="text/plain" data-role="warning" data-label="Careful"> ... </script>
+  </article>
+
+  Code boxes whose data-file ends in .sh get the extra "Copy for terminal" button.
+  Explanation text: blank line = paragraph, "- " = bullets, "1. " = numbered, `x` = inline code.
+  ================================================================
+-->
+<div id="source" hidden>
+
+<!-- ============ 1 ============ -->
+<article data-title="File commands" data-aim="To demonstrate the file commands rm, cp, cat, mv, cmp, wc, split and diff." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="filecmds.sh" data-setup="mkdir -p lab1 &amp;&amp; cd lab1 &amp;&amp; printf 'a\nb\nc\nd\ne\nf\ng\n' > file1 &amp;&amp; printf 'sun\nmon\ntue\nwed\nthu\nfri\nsat\n' > file3 &amp;&amp; echo extra > file6">
+#!/bin/bash
+ls                  # To list all files in the directory
+cp file1 file2      # To copy a file
+cat file2           # To view contents of file2
+mv file3 file4      # To move/rename a file
+cat file4           # To display contents of file4
+wc file1            # To see word/line/char count
+wc -l file1         # To count only lines
+wc -w file1         # To count only words
+wc -c file1         # To count only characters
+split -3 file1      # To split file into parts of 3 lines
+head -3 file1       # To display first 3 lines
+tail -3 file1       # To display last 3 lines
+cmp file1 file2     # To compare two files byte by byte
+diff file1 file2    # To show line-by-line differences
+rm file6            # To remove file6
+rm -r *             # To remove all files in the directory
+  </script>
+  <script type="text/plain" data-role="output">
+[ita1@Kgcaslinux ~]$ ls
+file1 file2 sun
+[ita1@Kgcaslinux ~]$ cp file1 file3
+[ita1@Kgcaslinux ~]$ cat file3
+a b c d e f g
+[ita1@Kgcaslinux ~]$ mv file2 file4
+[ita1@Kgcaslinux ~]$ wc file4
+ 7 7 28 file4
+[ita1@Kgcaslinux ~]$ split -3 file4
+[ita1@Kgcaslinux ~]$ ls
+file1 file3 file4 sun xaa xab xac
+[ita1@Kgcaslinux ~]$ cmp file1 file4
+file1 file4 differ: byte 1, line 1
+[ita1@Kgcaslinux ~]$ diff file1 file4
+1,7c1,7
+< a < b < c ...
+---
+> sun > mon > tue ...
+[ita1@Kgcaslinux ~]$ rm xac
+[ita1@Kgcaslinux ~]$ rm -r *
+  </script>
+  <script type="text/plain" data-role="warning" data-label="Careful before you run">
+The last line, `rm -r *`, deletes everything in the folder where you run it. Never run this script in your home folder.
+
+The **Copy for terminal** button is safe: it first makes a practice folder called `lab1` with sample files (`file1`, `file3`, `file6`), moves into it, and then runs the script there.
+  </script>
+  <script type="text/plain" data-role="explanation">
+A shell script is just a list of Linux commands saved in a file and run from top to bottom. The first line `#!/bin/bash` tells Linux to run it with bash. Text after `#` is a comment and is ignored.
+
+- `ls` lists the files in the folder.
+- `cp file1 file2` copies file1 to a new file called file2.
+- `cat file2` prints the contents of a file on the screen.
+- `mv file3 file4` moves or renames file3 to file4.
+- `wc file1` counts lines, words and characters. `-l` gives only lines, `-w` only words, `-c` only characters.
+- `split -3 file1` cuts the file into pieces of 3 lines each, named `xaa`, `xab`, `xac` and so on.
+- `head -3` shows the first 3 lines and `tail -3` shows the last 3 lines.
+- `cmp` compares two files byte by byte and `diff` compares them line by line. If the files are identical (file2 is a copy of file1) they print nothing.
+- `rm file6` deletes a file and `rm -r *` deletes everything in the current folder. That includes the script file itself, which is why the button creates it again each time.
+  </script>
+</article>
+
+<!-- ============ 2 ============ -->
+<article data-title="System configuration" data-aim="To display user, shell, OS, path, CPU and memory information." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="sysinfo.sh">
+#!/bin/bash
+echo -e "Username        : $USER"
+echo -e "Login Name      : $LOGNAME"
+echo -e "Current Shell   : $SHELL"
+echo -e "Home Directory  : $HOME"
+echo -e "OS Type         : $OSTYPE"
+echo -e "Current Path    : $PATH"
+echo -e "Working Dir     : `pwd`"
+echo -e "Logged-in Users : `who | wc -l`"
+echo -e "Available Shells:"
+cat /etc/shells
+echo -e "CPU Info        :"
+lscpu | grep -E 'Model name|CPU MHz'
+echo -e "Memory Info     :"
+free -m
+  </script>
+  <script type="text/plain" data-role="output">
+[ita1@Kgcaslinux ~]$ sh sysinfo.sh
+Username        : tsa
+Login Name      : tsa
+Current Shell   : /bin/bash
+Home Directory  : /home/tsa
+OS Type         : linux-gnu
+Current Path    : /usr/local/bin:/usr/bin:/bin
+Working Dir     : /home/tsa
+Logged-in Users : 2
+Available Shells:
+/bin/sh /bin/bash /usr/bin/zsh
+CPU Info        :
+Model name: Intel(R) Core(TM) i5-8250U CPU @ 1.60GHz
+Memory Info     :
+        total used free
+Mem:     7892 3400 4492
+  </script>
+  <script type="text/plain" data-role="explanation">
+This script prints details about you and the machine.
+
+- `$USER`, `$LOGNAME`, `$SHELL`, `$HOME`, `$OSTYPE` and `$PATH` are environment variables. Linux already fills them with your user name, login name, shell, home folder, OS type and the list of folders searched for commands.
+- `echo -e` prints text and allows special characters like `\n`.
+- Backticks run a command and put its output inside the text. `pwd` prints the current folder.
+- `who | wc -l` counts logged-in users. `who` lists them and the pipe `|` sends that list to `wc -l`, which counts the lines.
+- `cat /etc/shells` prints the file that lists all installed shells.
+- `lscpu` shows CPU details. `grep -E 'Model name|CPU MHz'` keeps only the lines with the CPU model and speed. On some newer systems the MHz line is missing, but the model name already shows the speed (like 1.60GHz).
+- `free -m` shows memory (RAM) in megabytes: total, used and free.
+  </script>
+</article>
+
+<!-- ============ 3 ============ -->
+<article data-title="Pipes, redirection and tee" data-aim="To use the pipe, redirection (> and >>), more and tee." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="pipe_redirect.sh">
+#!/bin/bash
+
+# Pipe ( | ): pass output of ls to wc
+echo "--- Pipe: Count files using ls | wc ---"
+ls -la | wc
+
+# Output Redirection (>): write to file
+echo "--- Redirection (>): Write to file ---"
+echo "Welcome to Linux" > sample1.txt
+cat sample1.txt
+
+# Append Redirection (>>): add to existing file
+echo "--- Append (>>): Add to file ---"
+echo "Always best learning institute" >> sample1.txt
+cat sample1.txt
+
+# More: paginated output
+echo "--- More: Display files page by page ---"
+ls -la | more
+
+# Tee: output to screen AND save to file
+echo "--- Tee: Screen + Save to file ---"
+ls -la | tee tee_output.txt
+echo ""
+echo "Content saved in tee_output.txt:"
+cat tee_output.txt
+  </script>
+  <script type="text/plain" data-role="output">
+[tsa03@localhost ~]$ sh pipe_redirect.sh
+--- Pipe: Count files using ls | wc ---
+  64 569 3333
+
+--- Redirection (>): Write to file ---
+Welcome to Linux
+
+--- Append (>>): Add to file ---
+Welcome to Linux
+Always best learning institute
+
+--- More: Display files page by page ---
+total 504
+drwx------ 4 tsa03 tsa03 4096 Feb 13 08:40 .
+-rw-rw-r-- 1 tsa03 tsa03 24 Jan 23 aa
+
+--- Tee: Screen + Save to file ---
+-rw-r--r-- 1 tsa03 tsa03 24 Jun 3 sample1.txt
+Content saved in tee_output.txt:
+-rw-r--r-- 1 tsa03 tsa03 24 Jun 3 sample1.txt
+  </script>
+  <script type="text/plain" data-role="explanation">
+These are the tools that connect commands and files together.
+
+- **Pipe `|`** sends the output of one command as the input of the next. `ls -la | wc` lists the files and then counts the lines, words and characters of that list.
+- **`>` redirection** sends output into a file instead of the screen. It overwrites the file if it already exists. `echo "Welcome to Linux" > sample1.txt` creates `sample1.txt`.
+- **`>>` append** adds output at the end of a file without erasing what is already there.
+- **`more`** shows long output one screen at a time. Press Space for the next page and `q` to quit.
+- **`tee`** does two things at once: it prints the output on the screen and also saves it in a file (`tee_output.txt`).
+- The script creates two files, `sample1.txt` and `tee_output.txt`, in the folder where you run it.
+  </script>
+</article>
+
+<!-- ============ 4 ============ -->
+<article data-title="Menu-driven script using case" data-aim="To show the user name, date, calendar and file listing based on the user's choice." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="menu.sh">
+#!/bin/bash
+
+echo "1- Who am I?"
+echo "2- Who is logged on?"
+echo "3- Date"
+echo "4- Calendar"
+echo "5- Current Directory"
+echo "6- File Listing"
+echo "Enter your choice:"
+read n
+
+case $n in
+ 1) whoami ;;
+ 2) who ;;
+ 3) date ;;
+ 4) cal ;;
+ 5) pwd ;;
+ 6) ls ;;
+ *) echo "Invalid choice" ;;
+esac
+  </script>
+  <script type="text/plain" data-role="output">
+[ita1@Kgcaslinux ~]$ sh menu.sh
+1- Who am I?
+2- Who is logged on?
+3- Date
+4- Calendar
+5- Current Directory
+6- File Listing
+Enter your choice:
+2
+tsa pts/0 Jun 3 09:00 (192.168.1.10)
+
+Enter your choice:
+3
+Mon Jun 3 09:15:30 IST 2026
+  </script>
+  <script type="text/plain" data-role="explanation">
+The script shows a menu, asks for a number, and runs the matching command.
+
+- `echo` prints each menu line.
+- `read n` waits for you to type something and stores it in the variable `n`.
+- `case $n in ... esac` compares the value of `n` with each option. Each option ends with `;;`.
+- Choice 1 runs `whoami` (your user name), 2 runs `who` (who is logged in), 3 runs `date`, 4 runs `cal` (calendar), 5 runs `pwd` (current folder) and 6 runs `ls` (file list).
+- `*)` is the default case. It runs when the input matches nothing else, so any other number prints "Invalid choice".
+- The script asks only once and then ends. Run it again to try another choice.
+  </script>
+</article>
+
+<!-- ============ 5 ============ -->
+<article data-title="Filter commands" data-aim="To use the filter commands grep, wc, tr and cut on the /etc/passwd file." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="filter.sh">
+#!/bin/bash
+
+echo "Filter Commands Demo"
+cp /etc/passwd passwd    # Copy /etc/passwd to local file
+
+echo "Lines, words and characters in passwd:"
+wc passwd
+
+echo "Lines containing the word root:"
+grep -n "root" passwd | more
+
+echo "Count of lines containing root:"
+grep -c "root" passwd
+
+echo "Lines that do NOT contain root:"
+grep -v "root" passwd | more
+
+echo "Replace ':' with '*' in passwd:"
+tr ':' '*' < passwd | more
+
+echo "First column (usernames) of passwd:"
+cut -d':' -f1 passwd
+  </script>
+  <script type="text/plain" data-role="output">
+[cs2ax@kgcaslinux ~]$ sh filter.sh
+Filter Commands Demo
+Lines, words and characters in passwd:
+1404 1451 65016 passwd
+
+Lines containing the word root:
+1:root:x:0:0:root:/root:/bin/bash
+10:operator:x:11:0:operator:/root:/sbin/nologin
+
+Count of lines containing root:
+2
+
+Lines that do NOT contain root:
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+
+Replace ':' with '*' in passwd:
+root*x*0*0*root*/root*/bin/bash
+
+First column (usernames) of passwd:
+root
+bin
+daemon
+  </script>
+  <script type="text/plain" data-role="explanation">
+A filter is a command that reads text and shows only the part you want. This script practises filters on `/etc/passwd`, the file that lists all users of the system. Each line looks like `name:x:UID:GID:info:home:shell`.
+
+- `cp /etc/passwd passwd` makes a copy in the current folder so we work on the copy.
+- `wc passwd` counts lines, words and characters.
+- `grep -n "root" passwd` prints the lines that contain "root" with their line numbers.
+- `grep -c "root" passwd` only counts how many lines contain "root".
+- `grep -v "root" passwd` prints the lines that do NOT contain "root" (`-v` means invert).
+- `tr ':' '*' < passwd` replaces every `:` with `*`. The `<` feeds the file into `tr`.
+- `cut -d':' -f1 passwd` cuts each line at every `:` (the delimiter) and prints only field 1, which is the user name.
+- `more` shows long output page by page. Press Space for the next page and `q` to quit.
+  </script>
+</article>
+
+<!-- ============ 6 ============ -->
+<article data-title="Remove zero-byte files" data-aim="To check whether a file exists and delete it if its size is zero bytes." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="zero_file.sh" data-setup="mkdir -p lab6 &amp;&amp; cd lab6 &amp;&amp; touch empty &amp;&amp; echo hello > one">
+#!/bin/bash
+
+clear
+echo "Enter any file name:"
+read filenm               # Read file name from user
+
+if [ -e $filenm ]            # Check if file exists
+then
+  echo "$filenm file exists"
+  if [ -s $filenm ]         # Check if file size > 0
+  then
+    echo "$filenm file has size > 0"
+  else
+    rm $filenm               # Remove file if size = 0
+    echo "$filenm deleted (size was 0 bytes)"
+  fi
+else
+  echo "$filenm file does not exist"
+fi
+  </script>
+  <script type="text/plain" data-role="output">
+[cs2ax@kgcaslinux ~]$ sh zero_file.sh
+Enter any file name:
+one
+one file exists
+one file has size > 0
+
+[cs2ax@kgcaslinux ~]$ sh zero_file.sh
+Enter any file name:
+empty
+empty file exists
+empty deleted (size was 0 bytes)
+
+[cs2ax@kgcaslinux ~]$ sh zero_file.sh
+Enter any file name:
+second
+second file does not exist
+  </script>
+  <script type="text/plain" data-role="explanation">
+The script asks for a file name and deletes the file only if it is empty.
+
+- `read filenm` stores the file name you type.
+- `[ -e $filenm ]` is true when the file exists. `[ -s $filenm ]` is true when the file exists and its size is greater than zero.
+- If the file exists and has content, it just says so. If it exists but is empty, `rm` deletes it. If it does not exist, it prints "does not exist".
+- `if ... then ... else ... fi` is the shell's decision structure. `fi` closes an `if`. Keep the spaces inside `[ ]`, they are required.
+- To try all three cases: the **Copy for terminal** button makes a practice folder `lab6` with an empty file named `empty` and a file named `one` that has text. Run it with `one`, then `empty`, then `second`.
+  </script>
+</article>
+
+<!-- ============ 7 ============ -->
+<article data-title="Sum of digits of a number" data-aim="To find the sum of the individual digits of a number using a while loop." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="digit_sum.sh">
+#!/bin/bash
+
+echo -n "Enter a number: "
+read n
+
+sd=0 # Stores single digit (remainder)
+sum=0 # Accumulates sum of digits
+
+while [ $n -gt 0 ] # Loop until all digits are processed
+do
+ sd=$(( $n % 10 ))   # Extract last digit
+ n=$(( $n / 10 ))  # Remove last digit
+ sum=$(( $sum + $sd )) # Add digit to sum
+done
+
+echo "Sum of all digits is $sum"
+  </script>
+  <script type="text/plain" data-role="output">
+[cs2ax@kgcaslinux ~]$ sh digit_sum.sh
+Enter a number: 12
+Sum of all digits is 3
+
+[cs2ax@kgcaslinux ~]$ sh digit_sum.sh
+Enter a number: 4567
+Sum of all digits is 22
+  </script>
+  <script type="text/plain" data-role="explanation">
+The idea: take the last digit, add it to a running total, chop it off, and repeat until no digits are left.
+
+- `$(( ... ))` does arithmetic. `%` gives the remainder and `/` gives the whole-number quotient. So `n % 10` is the last digit and `n / 10` removes it.
+- `while [ $n -gt 0 ]` repeats as long as `n` is greater than 0.
+- Example with 4567: last digit 7 (n becomes 456, sum 7), then 6 (n = 45, sum 13), then 5 (n = 4, sum 18), then 4 (n = 0, sum 22). The loop stops and prints 22.
+- `echo -n` prints without moving to a new line, so you type the number right after the prompt.
+  </script>
+</article>
+
+<!-- ============ 8 ============ -->
+<article data-title="Greatest and smallest using command line arguments" data-aim="To read a set of numbers and find the greatest and smallest among them." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="greatest.sh" data-run="bash greatest.sh 3">
+#!/bin/bash
+
+clear
+for (( i=0; i<$1; i++ ))   # $1 = count of numbers to enter
+do
+ echo "Enter number $((i+1)):"
+ read nos[$i]             # Read each number into array
+done
+
+echo "Numbers entered are:"
+for (( i=0; i<$1; i++ ))
+do
+ echo ${nos[$i]}
+done
+
+small=${nos[0]}
+greater=${nos[0]}
+
+for (( i=0; i<$1; i++ ))        # Compare all numbers
+do
+ if [ ${nos[$i]} -lt $small ]; then
+   small=${nos[$i]}              # Update smallest
+ elif [ ${nos[$i]} -gt $greater ]; then
+   greater=${nos[$i]}         # Update greatest
+ fi
+done
+
+echo "Smallest number in the array: $small"
+echo "Greatest number in the array: $greater"
+  </script>
+  <script type="text/plain" data-role="output">
+[ctb11@Kgcaslinux ~]$ sh greatest.sh 3
+Enter number 1:
+3
+Enter number 2:
+98
+Enter number 3:
+56
+Numbers entered are:
+3 98 56
+Smallest number in the array: 3
+Greatest number in the array: 98
+  </script>
+  <script type="text/plain" data-role="explanation">
+You tell the script how many numbers you will enter, and it finds the smallest and largest.
+
+- `$1` is the first command line argument, the value typed after the script name. In `bash greatest.sh 3`, `$1` is 3, so the script asks for 3 numbers. The button already runs it as `bash greatest.sh 3`. Change the 3 if you want more numbers.
+- `nos` is an array, a variable that holds many values: `nos[0]`, `nos[1]`, `nos[2]` and so on. `${nos[$i]}` reads one element.
+- The first loop reads the numbers. The second prints them.
+- `small` and `greater` both start as the first number. The last loop checks every number: if it is smaller than `small` it replaces it (`-lt` means less than), and if it is bigger than `greater` it replaces that (`-gt` means greater than).
+  </script>
+</article>
+
+<!-- ============ 9 ============ -->
+<article data-title="Palindrome check" data-aim="To check whether a number reads the same forwards and backwards." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="palindrome.sh">
+#!/bin/bash
+
+clear
+echo -n "Enter Number: "
+read n                # Read input number
+
+sd=0                    # Stores remainder
+rev=""                  # Stores reversed number
+on=$n                    # Save original number
+
+while [ $n -gt 0 ]
+do
+ sd=$(( $n % 10 ))       # Get last digit
+ n=$(( $n / 10 ))      # Remove last digit
+ rev=$(echo ${rev}${sd})    # Append digit to reversed string
+done
+
+if [ $on -eq $rev ]       # Compare original with reversed
+then
+  echo "Number $on is a Palindrome"
+else
+  echo "Number $on is NOT a Palindrome"
+fi
+  </script>
+  <script type="text/plain" data-role="output">
+[ctb11@Kgcaslinux ~]$ sh palindrome.sh
+Enter Number: 121
+Number 121 is a Palindrome
+
+[ctb11@Kgcaslinux ~]$ sh palindrome.sh
+Enter Number: 1234
+Number 1234 is NOT a Palindrome
+  </script>
+  <script type="text/plain" data-role="explanation">
+A palindrome reads the same in both directions (121, 1331). The script reverses the number and compares it with the original.
+
+- `on=$n` saves the original number, because the loop keeps dividing `n` until it becomes 0.
+- Each time round the loop, the last digit is taken with `n % 10` and added to the end of `rev`. `${rev}${sd}` glues the digit after what is already in `rev`, so 121 builds 1, then 12, then 121.
+- `[ $on -eq $rev ]` checks whether the original and the reversed number are equal (`-eq` means equal). If yes it prints Palindrome, otherwise NOT a Palindrome.
+  </script>
+</article>
+
+<!-- ============ 10 ============ -->
+<article data-title="Multiplication table" data-aim="To print the multiplication table of a number up to a given range using a for loop." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="multiplication.sh">
+#!/bin/bash
+
+echo "Enter the table number:"
+read n
+
+echo "Enter the range:"
+read range
+
+echo "Multiplication table for $n up to range $range"
+
+for (( i=1; i<=range; i++ ))
+{
+  echo " $i X $n = `expr $n \* $i`" # Loop executes until i <= range
+}
+  </script>
+  <script type="text/plain" data-role="output">
+[csb1@Kgcaslinux ~]$ sh multiplication.sh
+Enter the table number:
+5
+Enter the range:
+10
+Multiplication table for 5 up to range 10
+ 1 X 5 = 5
+ 2 X 5 = 10
+ 3 X 5 = 15
+ 4 X 5 = 20
+ 5 X 5 = 25
+ 6 X 5 = 30
+ 7 X 5 = 35
+ 8 X 5 = 40
+ 9 X 5 = 45
+ 10 X 5 = 50
+  </script>
+  <script type="text/plain" data-role="explanation">
+The script asks for a table number and how far to go, then prints each row.
+
+- `for (( i=1; i<=range; i++ ))` is a counting loop. `i` starts at 1, the loop runs while `i` is less than or equal to `range`, and `i++` adds 1 each time.
+- `expr $n \* $i` multiplies the two numbers. The `*` must be written as `\*`, otherwise the shell treats it as "all files in this folder".
+- Backticks run the `expr` command and put its result inside the `echo` text.
+- The curly braces `{ }` hold the loop body here (this is bash's alternative to `do ... done`).
+  </script>
+</article>
+
+<!-- ============ 11 ============ -->
+<article data-title="Group information" data-aim="To display and analyse group information: all groups, group ID, members, group count and the current user's groups." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="group_info.sh">
+#!/bin/bash
+
+# a. Display all groups available in the system
+echo "--- All Groups in the System ---"
+cat /etc/group | cut -d: -f1
+
+# b. Display the group ID of a specified group
+echo ""
+echo "Enter group name to find its ID:"
+read grpname
+grpid=$(getent group $grpname | cut -d: -f3)
+echo "Group ID of '$grpname' is: $grpid"
+
+# c. List users belonging to a particular group
+echo ""
+echo "Enter group name to list its members:"
+read grpname2
+echo "Users in group '$grpname2':"
+getent group $grpname2 | cut -d: -f4 | tr ',' '\n'
+
+# d. Count total number of groups
+echo ""
+totalgroups=$(cat /etc/group | wc -l)
+echo "Total number of groups: $totalgroups"
+
+# e. Display groups assigned to current user
+echo ""
+echo "Groups assigned to current user ($USER):"
+groups $USER
+  </script>
+  <script type="text/plain" data-role="output">
+[csb1@Kgcaslinux ~]$ sh group_info.sh
+--- All Groups in the System ---
+root
+bin
+daemon
+users ...
+
+Enter group name to find its ID:
+users
+Group ID of 'users' is: 100
+
+Enter group name to list its members:
+users
+Users in group 'users':
+csb1
+csb2
+
+Total number of groups: 72
+
+Groups assigned to current user (csb1):
+csb1 users wheel
+  </script>
+  <script type="text/plain" data-role="explanation">
+Linux keeps its groups in the file `/etc/group`. Each line looks like `groupname:x:GID:member1,member2`, where GID is the group ID.
+
+- **a.** `cut -d: -f1` splits each line at `:` and prints field 1, the group name.
+- **b.** The script asks for a group name. `getent group NAME` looks that group up, and `cut -d: -f3` keeps field 3, the group ID. `$( ... )` stores the result in the variable `grpid`.
+- **c.** Field 4 holds the members separated by commas. `tr ',' '\n'` changes each comma into a new line so every member prints on its own line.
+- **d.** `wc -l` counts the lines of `/etc/group`, which is the number of groups.
+- **e.** `groups $USER` prints all groups the current user belongs to.
+- When it asks for a group name, type a group that exists, like `users` or `root`.
+  </script>
+</article>
+
+<!-- ============ 12 ============ -->
+<article data-title="Process monitoring" data-aim="To display all processes, user processes, top CPU consumers, PID and PPID, and the process count." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="process_monitor.sh">
+#!/bin/bash
+
+# a. Display all running processes
+echo "--- All Running Processes ---"
+ps -ef
+
+# b. Processes belonging to the current user
+echo ""
+echo "--- Processes of Current User ($USER) ---"
+ps -u $USER
+
+# c. Top 5 CPU consuming processes
+echo ""
+echo "--- Top 5 CPU Consuming Processes ---"
+echo "PID COMMAND            %CPU"
+ps -eo pid,comm,%cpu --sort=-%cpu | head -6
+
+# d. Process ID and Parent Process ID
+echo ""
+echo "--- PID and PPID ---"
+echo "PID PPID COMMAND"
+ps -eo pid,ppid,comm | head -15
+
+# e. Total number of running processes
+echo ""
+total=$(ps -ef | wc -l)
+echo "Total number of running processes: $total"
+  </script>
+  <script type="text/plain" data-role="output">
+[csb1@Kgcaslinux ~]$ sh process_monitor.sh
+--- All Running Processes ---
+UID PID PPID C STIME TTY TIME CMD
+root 1 0 0 09:00 ? 00:00:02 /sbin/init
+root 2 0 0 09:00 ? 00:00:00 [kthreadd] ...
+
+--- Processes of Current User (csb1) ---
+PID TTY        TIME CMD
+1234 pts/0 00:00:00 bash
+
+--- Top 5 CPU Consuming Processes ---
+PID COMMAND             %CPU
+1024 firefox      12.5
+1100 Xorg          5.2
+1200 python3        3.1
+1300 bash         0.5
+1400 ps          0.2
+
+--- PID and PPID ---
+PID PPID COMMAND
+1 0 systemd
+2 0 kthreadd
+
+Total number of running processes: 185
+  </script>
+  <script type="text/plain" data-role="explanation">
+A process is a running program. Every process has a number called PID (process ID), and the PID of the process that started it is its PPID (parent process ID).
+
+- **a.** `ps -ef` lists every process on the system in full format. The list is long.
+- **b.** `ps -u $USER` lists only the processes that belong to you.
+- **c.** `ps -eo pid,comm,%cpu` chooses the columns to show (PID, command name, CPU percentage). `--sort=-%cpu` sorts with the highest CPU use first. `head -6` keeps 6 lines: 1 header plus the top 5 processes.
+- **d.** `ps -eo pid,ppid,comm | head -15` shows PID, parent PID and command for the first 15 processes.
+- **e.** `ps -ef | wc -l` counts the lines. The heading line is also counted, so the real number of processes is one less.
+  </script>
+</article>
+
+<!-- ============ 13 ============ -->
+<article data-title="Network configuration" data-aim="To display hostname, IP addresses, routing table, DNS servers and test connectivity." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="network_info.sh">
+#!/bin/bash
+
+# a. Display system hostname
+echo "--- System Hostname ---"
+hostname
+
+# b. IP address of all network interfaces
+echo ""
+echo "--- IP Addresses of Network Interfaces ---"
+ip addr show | grep -E 'inet |^[0-9]+:'
+
+# c. Routing table information
+echo ""
+echo "--- Routing Table ---"
+ip route
+
+# d. DNS server configuration
+echo ""
+echo "--- DNS Server Configuration ---"
+cat /etc/resolv.conf
+
+# e. Test network connectivity
+echo ""
+echo "Enter remote host to test (e.g. 8.8.8.8):"
+read remotehost
+echo "Testing connectivity to $remotehost ..."
+ping -c 4 $remotehost
+  </script>
+  <script type="text/plain" data-role="output">
+[csb1@Kgcaslinux ~]$ sh network_info.sh
+--- System Hostname ---
+Kgcaslinux
+
+--- IP Addresses of Network Interfaces ---
+1: lo: inet 127.0.0.1/8 scope host lo
+2: eth0: inet 192.168.1.100/24 brd 192.168.1.255
+
+--- Routing Table ---
+default via 192.168.1.1 dev eth0
+192.168.1.0/24 dev eth0 proto kernel
+
+--- DNS Server Configuration ---
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+
+Enter remote host to test (e.g. 8.8.8.8):
+8.8.8.8
+Testing connectivity to 8.8.8.8 ...
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=118 time=12.3 ms
+4 packets transmitted, 4 received, 0% packet loss
+  </script>
+  <script type="text/plain" data-role="explanation">
+This script shows how the computer is connected to the network.
+
+- **a.** `hostname` prints the name of the computer.
+- **b.** `ip addr show` shows all network interfaces (like `lo` and `eth0`) with their IP addresses. The `grep -E 'inet |^[0-9]+:'` part keeps only the lines with an IP address (`inet`) and the interface name lines, so the output is short.
+- **c.** `ip route` shows the routing table, which tells the computer where to send network traffic. The `default via` line is the gateway (router).
+- **d.** `/etc/resolv.conf` lists the DNS servers, the computers that turn website names into IP addresses.
+- **e.** The script asks for a host and runs `ping -c 4`, which sends 4 test packets and then stops. Type `8.8.8.8` (Google's public DNS) to test. It needs a working internet connection. If it shows 100% packet loss, the host is unreachable or ping is blocked on the network.
+  </script>
+</article>
+
+<!-- ============ 14 ============ -->
+<article data-title="System log monitoring" data-aim="To view logs, login history, failed logins, search keywords and see security messages." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="log_monitor.sh">
+#!/bin/bash
+
+# a. Recent system log entries
+echo "--- Recent System Log Entries ---"
+tail -20 /var/log/messages 2>/dev/null || journalctl -n 20
+
+# b. Login history of users
+echo ""
+echo "--- Login History of Users ---"
+last | head -15
+
+# c. Failed login attempts
+echo ""
+echo "--- Failed Login Attempts ---"
+grep "Failed password" /var/log/secure 2>/dev/null | tail -10
+
+# d. Search for specific keyword in log files
+echo ""
+echo "Enter keyword to search in /var/log/messages:"
+read keyword
+echo "Results for '$keyword':"
+grep -i "$keyword" /var/log/messages 2>/dev/null | tail -10
+
+# e. Last 10 security related log messages
+echo ""
+echo "--- Last 10 Security Log Messages ---"
+tail -10 /var/log/secure 2>/dev/null || journalctl -u sshd -n 10
+  </script>
+  <script type="text/plain" data-role="output">
+[csb1@Kgcaslinux ~]$ sh log_monitor.sh
+--- Recent System Log Entries ---
+Jun 3 09:00:01 Kgcaslinux systemd: Started Session 5 of user csb1.
+Jun 3 09:01:15 Kgcaslinux kernel: eth0: link is up ...
+
+--- Login History of Users ---
+csb1 pts/0 192.168.1.10 Mon Jun 3 09:00 still logged in
+root pts/1 192.168.1.5 Mon Jun 3 08:45 - 08:55 (00:10)
+
+--- Failed Login Attempts ---
+Jun 3 08:30 sshd: Failed password for invalid user admin from 10.0.0.1
+
+Enter keyword to search in /var/log/messages:
+error
+Results for 'error':
+Jun 3 09:02 kernel: ACPI Error: Method parse/execution failed
+
+--- Last 10 Security Log Messages ---
+Jun 3 09:00 sshd: Accepted password for csb1 from 192.168.1.10
+  </script>
+  <script type="text/plain" data-role="explanation">
+Linux records what happens on the system in log files inside `/var/log`. This script reads them to look for suspicious activity.
+
+- **a.** `tail -20` prints the last 20 lines of the system log `/var/log/messages`. If that file is missing or not readable, `||` means "otherwise run" the next command, `journalctl -n 20`, which reads the system journal instead.
+- **b.** `last` shows the login history (who logged in, from where, and when). `head -15` keeps the first 15 lines.
+- **c.** `grep "Failed password" /var/log/secure` finds lines about wrong-password logins. Many of these from one address can mean someone is trying to break in. `tail -10` keeps the last 10.
+- **d.** The script asks for a keyword and `grep -i` searches for it in the log, ignoring upper and lower case.
+- **e.** `/var/log/secure` is the security log (logins and authentication). The last 10 lines are shown.
+- `2>/dev/null` hides error messages such as "permission denied" or "no such file".
+- The file names above are for Red Hat / CentOS style systems, like the college server. On Ubuntu the logs are `/var/log/syslog` and `/var/log/auth.log`, and reading them may need `sudo`, so some sections can be empty there.
+  </script>
+</article>
+
+<!-- ============ 15 ============ -->
+<article data-title="Disk usage analysis" data-aim="To show directory sizes, largest directories, file counts, filesystem types and free space." data-lang="bash">
+  <script type="text/plain" data-role="code" data-file="disk_usage.sh">
+#!/bin/bash
+
+# a. Disk usage of all directories in home folder
+echo "--- Disk Usage of Home Directory ---"
+du -sh ~/* 2>/dev/null
+
+# b. Top 5 largest directories in the system
+echo ""
+echo "--- Top 5 Largest Directories ---"
+du -sh /* 2>/dev/null | sort -rh | head -5
+
+# c. Number of files in each home subdirectory
+echo ""
+echo "--- File Count in Each Home Subdirectory ---"
+for dir in ~/*/
+do
+ count=$(ls "$dir" 2>/dev/null | wc -l)
+ echo "$dir : $count files"
+done
+
+# d. Filesystem type of each partition
+echo ""
+echo "--- Filesystem Type of Each Partition ---"
+df -T | awk '{print $1, $2, $NF}'
+
+# e. Free disk space available
+echo ""
+echo "--- Free Disk Space Available ---"
+df -h
+  </script>
+  <script type="text/plain" data-role="output">
+[csb1@Kgcaslinux ~]$ sh disk_usage.sh
+--- Disk Usage of Home Directory ---
+4.0K /home/csb1/Desktop
+8.5M /home/csb1/Documents
+120M /home/csb1/Downloads
+
+--- Top 5 Largest Directories ---
+12G /usr
+5.2G /var
+3.8G /home
+1.5G /opt
+980M /boot
+
+--- File Count in Each Home Subdirectory ---
+/home/csb1/Desktop/ : 3 files
+/home/csb1/Documents/ : 12 files
+/home/csb1/Downloads/ : 45 files
+
+--- Filesystem Type of Each Partition ---
+Filesystem Type Mounted on
+/dev/sda1 ext4 /
+tmpfs       tmpfs /tmp
+
+--- Free Disk Space Available ---
+Filesystem Size Used Avail Use% Mounted on
+/dev/sda1 50G 22G 26G 46% /
+tmpfs      3.9G 0 3.9G 0% /tmp
+  </script>
+  <script type="text/plain" data-role="explanation">
+This script shows where the disk space is going.
+
+- **a.** `du -sh ~/*` shows the size of every item in your home folder (`~` means home). `-s` gives one total per item and `-h` prints sizes in a readable form like 8.5M.
+- **b.** `du -sh /*` measures the top-level folders of the whole system. `sort -rh` sorts by size with the biggest first and `head -5` keeps the top 5. This scans everything, so it can take a minute. Press `Ctrl+C` to stop it.
+- **c.** The `for` loop goes through every folder in your home (`~/*/` matches folders only). `ls "$dir" | wc -l` counts what is inside each one.
+- **d.** `df -T` lists the partitions with their file system type (like ext4). `awk '{print $1, $2, $NF}'` prints only the first column, the second column and the last column (the mount point).
+- **e.** `df -h` shows total, used and free space of each partition in a readable form.
+- `2>/dev/null` hides "permission denied" messages.
+  </script>
+</article>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+(function () {
+  var articles = Array.prototype.slice.call(document.querySelectorAll('#source > article'));
+  var programsEl = document.getElementById('programs');
+  var indexEl = document.getElementById('index');
+  var emptyEl = document.getElementById('empty');
+  var searchEl = document.getElementById('search');
+
+  function clean(s) { return s.textContent.replace(/^\s*\n/, '').replace(/\s+$/, ''); }
+  function getOne(article, role) {
+    var s = article.querySelector('script[data-role="' + role + '"]');
+    return s ? clean(s) : '';
+  }
+  function esc(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function inline(str) {
+    return esc(str)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  }
+  // blank line = paragraph, "- " = bullets, "1. " = numbered steps
+  function renderText(text) {
+    var dedented = text.split('\n').map(function (l) { return l.replace(/^\s+/, ''); }).join('\n');
+    return dedented.split(/\n\s*\n/).map(function (block) {
+      var lines = block.split('\n');
+      if (lines.every(function (l) { return /^-\s+/.test(l); })) {
+        return '<ul>' + lines.map(function (l) { return '<li>' + inline(l.replace(/^-\s+/, '')) + '</li>'; }).join('') + '</ul>';
+      }
+      if (lines.every(function (l) { return /^\d+\.\s+/.test(l); })) {
+        return '<ol>' + lines.map(function (l) { return '<li>' + inline(l.replace(/^\d+\.\s+/, '')) + '</li>'; }).join('') + '</ol>';
+      }
+      return '<p>' + inline(lines.join(' ')) + '</p>';
+    }).join('');
+  }
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(text); });
+    }
+    return Promise.resolve(fallback(text));
+  }
+  function fallback(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+  // One paste in the terminal: (optional safe setup) + create the file + run it
+  function terminalCommand(file, code, run, setup) {
+    return (setup ? setup + ' && ' : '') +
+      'cat > ' + file + " << 'EOF' && " + (run || 'bash ' + file) + '\n' + code + '\nEOF\n';
+  }
+  function wireButton(btn, label, getText) {
+    btn.addEventListener('click', function () {
+      Promise.resolve(copyText(getText())).then(function (ok) {
+        btn.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = label; btn.classList.remove('done'); }, 1600);
+      });
+    });
+  }
+
+  function makeCodeBox(s, defaultLang) {
+    var file = s.dataset.file || '';
+    var lang = s.dataset.lang || defaultLang;
+    var code = clean(s);
+    var box = document.createElement('div');
+    box.className = 'codebox';
+    var isScript = /\.sh$/.test(file);
+    box.innerHTML = '<div class="bar"><span class="lang"></span><div class="btns">' +
+      (isScript ? '<button class="copy term" type="button">Copy for terminal</button>' : '') +
+      '<button class="copy plain" type="button">Copy code</button></div></div><pre><code></code></pre>';
+    box.querySelector('.lang').textContent = file || lang;
+    var codeEl = box.querySelector('code');
+    codeEl.textContent = code;
+    if (window.hljs && lang !== 'plaintext') {
+      codeEl.className = 'language-' + lang;
+      try { hljs.highlightElement(codeEl); } catch (e) {}
+    }
+    wireButton(box.querySelector('.plain'), 'Copy code', function () { return code; });
+    var t = box.querySelector('.term');
+    if (t) wireButton(t, 'Copy for terminal', function () { return terminalCommand(file, code, s.dataset.run, s.dataset.setup); });
+    return box;
+  }
+
+  var items = articles.map(function (a, i) {
+    var num = i + 1;
+    var title = a.dataset.title || 'Program ' + num;
+    var aim = a.dataset.aim || '';
+    var defaultLang = a.dataset.lang || 'bash';
+    var output = getOne(a, 'output');
+    var explanation = getOne(a, 'explanation');
+    var warnEl = a.querySelector('script[data-role="warning"]');
+
+    var section = document.createElement('section');
+    section.className = 'program';
+    section.id = 'p' + num;
+    section.innerHTML = '<header><span class="badge">' + num + '</span><div><h2>' + esc(title) + '</h2>' +
+      (aim ? '<p class="aim">' + esc(aim) + '</p>' : '') + '</div></header>';
+
+    Array.prototype.forEach.call(a.querySelectorAll('script[data-role="code"]'), function (s) {
+      section.appendChild(makeCodeBox(s, defaultLang));
+    });
+
+    var extra = '';
+    if (warnEl) extra += '<p class="exp-label">' + esc(warnEl.dataset.label || 'Note') + '</p><div class="explain warn">' + renderText(clean(warnEl)) + '</div>';
+    if (output) extra += '<p class="out-label">Output</p><pre class="output"></pre>';
+    if (explanation) extra += '<p class="exp-label">Explanation</p><div class="explain">' + renderText(explanation) + '</div>';
+    if (extra) {
+      var holder = document.createElement('div');
+      holder.innerHTML = extra;
+      var pre = holder.querySelector('.output');
+      if (pre) pre.textContent = output;
+      while (holder.firstChild) section.appendChild(holder.firstChild);
+    }
+    programsEl.appendChild(section);
+
+    var li = document.createElement('li');
+    li.innerHTML = '<a href="#p' + num + '"><span class="no">' + num + '</span><span class="t">' + esc(title) + '</span></a>';
+    indexEl.appendChild(li);
+
+    return { section: section, li: li, link: li.querySelector('a'), haystack: (title + ' ' + aim).toLowerCase() };
+  });
+
+  searchEl.addEventListener('input', function () {
+    var q = searchEl.value.trim().toLowerCase();
+    var shown = 0;
+    items.forEach(function (it) {
+      var match = !q || it.haystack.indexOf(q) !== -1;
+      it.section.style.display = match ? '' : 'none';
+      it.li.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    emptyEl.classList.toggle('show', shown === 0);
+  });
+
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          items.forEach(function (it) { it.link.classList.toggle('active', it.section === e.target); });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    items.forEach(function (it) { io.observe(it.section); });
+  }
+})();
+</script>
+</body>
+</html>
